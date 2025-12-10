@@ -11,7 +11,7 @@ This PowerPoint MCP server provides automated presentation generation with data 
 
 **Activation**:
 - Restart Claude Code
-- All 20 PowerPoint tools will be available
+- All 36 PowerPoint tools will be available
 - Use natural language commands
 
 ### 2. Test Results
@@ -49,32 +49,43 @@ cd /Users/rena/mcp-powerpoint-server
 python test_mcp.py
 ```
 
-## 📚 Available Tools (20 total)
+## 📚 Available Tools (36 total)
 
-**Basic** (6 tools)
-- create_presentation
-- open_presentation
-- save_presentation
-- list_presentations
-- add_title_slide
-- add_content_slide
-
-**Advanced Content** (7 tools)
+**Basic Management** (7 tools)
+- create_presentation, open_presentation, save_presentation
+- list_presentations, add_title_slide, add_content_slide
 - add_two_column_slide
-- add_image_slide
-- add_table_slide
-- add_chart_slide
-- add_comparison_slide
-- add_timeline_slide
-- format_text
+
+**Charts** (3 tools)
+- add_chart_slide (bar, column, line, pie, area)
+- add_scatter_chart, add_bubble_chart
 
 **Data Analysis** (2 tools)
 - analyze_and_chart (Auto-analyze CSV/Excel/JSON)
 - read_data_file
 
-**Customization** (5 tools)
-- set_slide_background
-- add_speaker_notes
+**Images** (2 tools)
+- add_image_slide, add_image_grid
+
+**Tables & Specialized** (4 tools)
+- add_table_slide, add_comparison_slide
+- add_timeline_slide, format_text
+
+**Shapes & Diagrams** (3 tools)
+- add_shape, add_connector, add_flowchart
+
+**Interactive** (2 tools)
+- add_hyperlink, add_qr_code
+
+**Organization** (2 tools)
+- add_section, add_agenda_slide
+
+**Operations** (3 tools)
+- duplicate_slide, delete_slide, merge_presentations
+
+**Styling** (5 tools)
+- set_slide_background, add_speaker_notes
+- apply_theme, add_footer, export_to_pdf
 
 ## 📖 Full Documentation
 

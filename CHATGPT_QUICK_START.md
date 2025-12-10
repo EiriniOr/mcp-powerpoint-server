@@ -280,7 +280,7 @@ Done! Your presentation is ready in ~/Downloads/
 ✅ **Simple** - Just Python code, no complex setup
 ✅ **Flexible** - ChatGPT can generate any presentation logic
 ✅ **Iterative** - Easy to modify and re-run
-✅ **Powerful** - Full access to all 20 MCP tools
+✅ **Powerful** - Full access to all 36 MCP tools
 ✅ **Data-Driven** - Automatically analyze CSV/Excel files
 
 ## Next Steps

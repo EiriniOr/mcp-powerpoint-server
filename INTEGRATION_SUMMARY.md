@@ -7,7 +7,7 @@ This PowerPoint MCP Server is configured for **both Claude and ChatGPT**.
 ### 1. Claude Code Integration
 **Status**: Configured (restart required)
 **Config**: `~/.config/claude-code/mcp_config.json`
-**Access**: All 20 tools via natural language
+**Access**: All 36 tools via natural language
 
 **Activation:**
 Restart Claude Code to enable MCP tools.
@@ -27,7 +27,7 @@ python chatgpt_wrapper.py test
 
 | File | Purpose |
 |------|---------|
-| `server.py` | Main MCP server (20 tools) |
+| `server.py` | Main MCP server (36 tools) |
 | `requirements.txt` | Dependencies |
 | `test_mcp.py` | Full server test |
 | `chatgpt_wrapper.py` | ChatGPT integration (Python API) |
@@ -126,31 +126,60 @@ Open any of these to see what the server can do!
 
 ## 📊 Available Features
 
-### 20 Powerful Tools
+### 36 Powerful Tools
 
-**Basic Management** (6)
+**Basic Management** (7)
 - Create/open/save presentations
 - List presentations
-- Add title/content slides
+- Add title/content/two-column slides
 
-**Advanced Content** (7)
-- Two-column layouts
-- Images (4 layout styles)
-- Tables (formatted)
-- Charts (5 types)
+**Images** (2)
+- Single images (4 layout styles)
+- Multi-image grids
+
+**Tables & Data** (3)
+- Formatted tables
+- CSV/Excel/JSON reading
+- Auto-analyze and chart data
+
+**Charts** (3)
+- Basic charts (bar, column, line, pie, area)
+- Scatter charts
+- Bubble charts
+
+**Specialized Slides** (2)
 - Comparison slides
 - Timeline slides
-- Custom text formatting
 
-**Data Intelligence** (2)
-- Auto-analyze CSV/Excel/JSON
-- Generate insights and charts
+**Shapes & Diagrams** (3)
+- Shapes (7 types)
+- Connectors (3 types)
+- Automated flowcharts
 
-**Customization** (5)
+**Interactive Elements** (2)
+- Hyperlinks
+- QR codes
+
+**Text Formatting** (1)
+- Advanced text formatting
+
+**Organization** (2)
+- Section breaks
+- Agenda slides
+
+**Slide Operations** (3)
+- Duplicate slides
+- Delete slides
+- Merge presentations
+
+**Backgrounds & Notes** (2)
 - Backgrounds (colors/images)
 - Speaker notes
-- Fonts, colors, sizes
-- Bold, italic, formatting
+
+**Themes & Styling** (3)
+- Color themes (7 options)
+- Footers with page numbers
+- PDF export
 
 ## 🔄 Workflow Comparison
 

@@ -73,32 +73,62 @@ Once set up, you can ask Claude to:
 
 ## Available Tools
 
-Your server has 20 powerful tools:
+Your server has 36 powerful tools:
 
-### Basic
+### Basic Management (7)
 - `create_presentation` - Start a new presentation
 - `open_presentation` - Open existing .pptx files
 - `save_presentation` - Save to disk
 - `list_presentations` - See what's in memory
-
-### Content
 - `add_title_slide` - Title slides
 - `add_content_slide` - Bullet point slides
 - `add_two_column_slide` - Two-column layouts
+
+### Images (2)
 - `add_image_slide` - Images with various layouts
+- `add_image_grid` - Multiple images in grid layout
+
+### Tables & Data (3)
 - `add_table_slide` - Formatted tables
-- `add_chart_slide` - Charts and graphs
+- `read_data_file` - Get statistics from data files
+- `analyze_and_chart` - Auto-analyze CSV/Excel/JSON and create charts
+
+### Charts (3)
+- `add_chart_slide` - Bar, column, line, pie, area charts
+- `add_scatter_chart` - XY scatter plots
+- `add_bubble_chart` - 3D bubble charts
+
+### Specialized Slides (2)
 - `add_comparison_slide` - Side-by-side comparisons
 - `add_timeline_slide` - Visual timelines
+
+### Shapes & Diagrams (3)
+- `add_shape` - Rectangle, circle, triangle, arrow, star, pentagon, hexagon
+- `add_connector` - Straight, elbow, curved connector lines
+- `add_flowchart` - Automated flowcharts
+
+### Interactive Elements (2)
+- `add_hyperlink` - Clickable links
+- `add_qr_code` - QR code generation
+
+### Text Formatting (1)
 - `format_text` - Custom text formatting
 
-### Data Analysis
-- `analyze_and_chart` - Auto-analyze CSV/Excel/JSON and create charts
-- `read_data_file` - Get statistics from data files
+### Organization (2)
+- `add_section` - Section break slides
+- `add_agenda_slide` - Table of contents
 
-### Customization
+### Slide Operations (3)
+- `duplicate_slide` - Copy slides
+- `delete_slide` - Remove slides
+- `merge_presentations` - Combine presentations
+
+### Customization (5)
 - `set_slide_background` - Custom backgrounds
 - `add_speaker_notes` - Presenter notes
+- `apply_theme` - Color themes (blue, red, green, purple, orange, professional, modern)
+- `add_footer` - Footers with page numbers
+- `export_to_pdf` - Export to PDF format
 
 ## Example Usage
 
