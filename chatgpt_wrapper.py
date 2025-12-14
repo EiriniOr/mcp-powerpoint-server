@@ -144,6 +144,45 @@ class PowerPointAPI:
         })
         return result[0].text
 
+    @staticmethod
+    async def apply_theme(filename: str, theme: str):
+        """
+        Apply a color theme to the presentation
+        theme: 'blue', 'red', 'green', 'purple', 'orange', 'professional', 'modern'
+        """
+        result = await call_tool("apply_theme", {
+            "filename": filename,
+            "theme": theme
+        })
+        return result[0].text
+
+    @staticmethod
+    async def add_slide_background(filename: str, slide_index: int, color: str = None, image_path: str = None):
+        """Add a background color or image to a slide"""
+        args = {
+            "filename": filename,
+            "slide_index": slide_index
+        }
+        if color:
+            args["color"] = color
+        if image_path:
+            args["image_path"] = image_path
+
+        result = await call_tool("add_slide_background", {
+            **args
+        })
+        return result[0].text
+
+    @staticmethod
+    async def add_footer(filename: str, text: str, show_page_number: bool = False):
+        """Add footer to all slides with optional page numbers"""
+        result = await call_tool("add_footer", {
+            "filename": filename,
+            "text": text,
+            "show_page_number": show_page_number
+        })
+        return result[0].text
+
 
 # ============================================================================
 # EXAMPLE USAGE - Copy these examples to use with ChatGPT
