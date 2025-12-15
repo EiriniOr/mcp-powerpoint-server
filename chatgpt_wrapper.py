@@ -183,6 +183,56 @@ class PowerPointAPI:
         })
         return result[0].text
 
+    @staticmethod
+    async def format_text_slide(filename: str, title: str, text_blocks: list):
+        """
+        Add a slide with advanced text formatting
+        text_blocks: [{"text": "...", "font_size": 14, "bold": True, "color": "#FFFFFF"}, ...]
+        """
+        result = await call_tool("format_text", {
+            "filename": filename,
+            "title": title,
+            "text_blocks": text_blocks
+        })
+        return result[0].text
+
+    @staticmethod
+    async def set_slide_background(filename: str, color: str = None, image_path: str = None, gradient: bool = False):
+        """Set background for the last added slide"""
+        args = {"filename": filename}
+        if color:
+            args["color"] = color
+        if image_path:
+            args["image_path"] = image_path
+        if gradient:
+            args["gradient"] = gradient
+
+        result = await call_tool("set_slide_background", args)
+        return result[0].text
+
+    @staticmethod
+    async def add_shape(filename: str, shape_type: str, left: float, top: float, width: float, height: float, fill_color: str = None, line_color: str = None):
+        """
+        Add a shape to the last slide
+        shape_type: 'rectangle', 'circle', 'triangle', 'arrow', etc.
+        Positions in inches from top-left
+        """
+        args = {
+            "filename": filename,
+            "shape_type": shape_type,
+            "left": left,
+            "top": top,
+            "width": width,
+            "height": height
+        }
+        if fill_color:
+            args["fill_color"] = fill_color
+        if line_color:
+            args["line_color"] = line_color
+
+        result = await call_tool("add_shape", args)
+        return result[0].text
+
 
 # ============================================================================
 # EXAMPLE USAGE - Copy these examples to use with ChatGPT
