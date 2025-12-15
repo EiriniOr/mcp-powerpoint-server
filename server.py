@@ -1428,7 +1428,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             "circle": MSO_SHAPE.OVAL,
             "triangle": MSO_SHAPE.ISOSCELES_TRIANGLE,
             "arrow": MSO_SHAPE.BLOCK_ARC,
-            "star": MSO_SHAPE.STAR_5,
+            "star": MSO_SHAPE.STAR_5_POINT,
             "pentagon": MSO_SHAPE.PENTAGON,
             "hexagon": MSO_SHAPE.HEXAGON
         }
