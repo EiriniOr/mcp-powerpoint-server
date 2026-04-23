@@ -25,6 +25,8 @@ app = Server("powerpoint-server")
 
 # Store for presentations (in-memory, keyed by filename)
 presentations = {}
+# Tracks which presentations were loaded from a .pptx template
+template_presentations: set = set()
 
 CHART_TYPE_MAP = {
     "bar": XL_CHART_TYPE.BAR_CLUSTERED,
@@ -33,6 +35,121 @@ CHART_TYPE_MAP = {
     "pie": XL_CHART_TYPE.PIE,
     "area": XL_CHART_TYPE.AREA,
 }
+
+
+DESIGN_PRESETS = {
+    "cyber-dark": {
+        "bg_colors": ["#0A0A0F", "#0D1B2A"],
+        "bg_angle": 135,
+        "accent": RGBColor(0, 255, 255),
+        "secondary": RGBColor(0, 100, 255),
+        "accent_style": "bars",
+    },
+    "neon-purple": {
+        "bg_colors": ["#0D0011", "#1A0033"],
+        "bg_angle": 150,
+        "accent": RGBColor(200, 0, 255),
+        "secondary": RGBColor(255, 0, 170),
+        "accent_style": "corners",
+    },
+    "deep-space": {
+        "bg_colors": ["#000510", "#0A1628", "#050E1F"],
+        "bg_angle": 120,
+        "accent": RGBColor(68, 136, 255),
+        "secondary": RGBColor(136, 200, 255),
+        "accent_style": "corners",
+    },
+    "minimal-dark": {
+        "bg_colors": ["#111111"],
+        "bg_angle": 0,
+        "accent": RGBColor(255, 255, 255),
+        "secondary": RGBColor(100, 100, 100),
+        "accent_style": "corners",
+    },
+    "electric-blue": {
+        "bg_colors": ["#000D1A", "#001A33"],
+        "bg_angle": 135,
+        "accent": RGBColor(0, 168, 255),
+        "secondary": RGBColor(0, 100, 200),
+        "accent_style": "bars",
+    },
+}
+
+
+def _set_gradient_background(slide, colors, angle_deg=135):
+    """Apply a linear gradient background to a slide via raw XML."""
+    from pptx.oxml.ns import qn
+
+    bg = slide.background
+    bgPr = bg._element.get_or_add_bgPr()
+
+    # Remove any existing fill
+    for tag in ("a:solidFill", "a:gradFill", "a:noFill", "a:pattFill", "a:blipFill"):
+        el = bgPr.find(qn(tag))
+        if el is not None:
+            bgPr.remove(el)
+
+    if len(colors) == 1:
+        # Solid fill for single colour
+        fill = bg.fill
+        fill.solid()
+        hex_val = colors[0].lstrip("#")
+        r, g, b = int(hex_val[0:2], 16), int(hex_val[2:4], 16), int(hex_val[4:6], 16)
+        fill.fore_color.rgb = RGBColor(r, g, b)
+        return
+
+    # angle_deg: CSS convention (0 = top→bottom, 90 = right→left)
+    # OOXML lin ang: 60000ths of degree, 0 = left→right, counter-clockwise
+    pptx_angle = int(((270 - angle_deg) % 360) * 60000)
+
+    gradFill = OxmlElement("a:gradFill")
+    gsLst = OxmlElement("a:gsLst")
+
+    n = len(colors)
+    for i, hex_color in enumerate(colors):
+        pos = int(i * 100000 / max(n - 1, 1))
+        gs = OxmlElement("a:gs")
+        gs.set("pos", str(pos))
+        srgbClr = OxmlElement("a:srgbClr")
+        srgbClr.set("val", hex_color.lstrip("#"))
+        gs.append(srgbClr)
+        gsLst.append(gs)
+
+    gradFill.append(gsLst)
+    lin = OxmlElement("a:lin")
+    lin.set("ang", str(pptx_angle))
+    lin.set("scaled", "0")
+    gradFill.append(lin)
+    bgPr.insert(0, gradFill)
+
+
+def _add_design_accents(slide, accent: RGBColor, secondary: RGBColor, style: str):
+    """Add geometric accent shapes to a slide."""
+    W = slide.part.presentation.slide_width
+    H = slide.part.presentation.slide_height
+    BAR = Inches(0.06)
+
+    def solid_rect(left, top, width, height, color: RGBColor):
+        shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = color
+        shape.line.fill.background()
+        return shape
+
+    if style == "bars":
+        # Thin accent bar along the left edge
+        solid_rect(0, 0, BAR, H, accent)
+        # Thin secondary bar along the bottom
+        solid_rect(0, H - BAR, W, BAR, secondary)
+
+    elif style == "corners":
+        arm = Inches(1.8)
+        # Top-left corner: horizontal + vertical arm
+        solid_rect(0, 0, arm, BAR, accent)
+        solid_rect(0, 0, BAR, arm, accent)
+        # Bottom-right corner: horizontal + vertical arm
+        solid_rect(W - arm, H - BAR, arm, BAR, secondary)
+        solid_rect(W - BAR, H - arm, BAR, arm, secondary)
 
 
 def _add_title_box(slide, title):
@@ -47,6 +164,50 @@ def _add_title_box(slide, title):
 async def list_tools() -> list[Tool]:
     """List available PowerPoint tools"""
     return [
+        Tool(
+            name="create_from_template",
+            description="Creates a presentation based on an existing .pptx template, inheriting all layouts, fonts, and theme colors. Design presets will not be applied automatically.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "template_path": {
+                        "type": "string",
+                        "description": "Absolute path to the .pptx template file",
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "Internal name to reference this presentation",
+                    },
+                },
+                "required": ["template_path", "filename"],
+            },
+        ),
+        Tool(
+            name="apply_design_preset",
+            description="Applies a modern/futuristic visual preset to all slides: gradient background + geometric accent shapes. Skipped on template-loaded presentations unless force=true.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string"},
+                    "preset": {
+                        "type": "string",
+                        "enum": [
+                            "cyber-dark",
+                            "neon-purple",
+                            "deep-space",
+                            "minimal-dark",
+                            "electric-blue",
+                        ],
+                        "description": "Design preset name",
+                    },
+                    "force": {
+                        "type": "boolean",
+                        "description": "Apply even if presentation was loaded from a template (default false)",
+                    },
+                },
+                "required": ["filename", "preset"],
+            },
+        ),
         Tool(
             name="create_presentation",
             description="Creates a new PowerPoint presentation with a title slide",
@@ -423,7 +584,7 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="set_slide_background",
-            description="Sets the background color or image for the last added slide",
+            description="Sets the background (solid color, gradient, or image) for a slide",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -437,7 +598,16 @@ async def list_tools() -> list[Tool]:
                     },
                     "color": {
                         "type": "string",
-                        "description": "Hex color code (e.g., '#FF0000') for solid color background",
+                        "description": "Hex color for solid background (e.g. '#0A0A0F')",
+                    },
+                    "gradient_colors": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "2-3 hex colors for a linear gradient background",
+                    },
+                    "gradient_angle": {
+                        "type": "number",
+                        "description": "Gradient angle in degrees, CSS convention: 0=top→bottom, 90=right→left, 135=bottom-left→top-right (default 135)",
                     },
                     "image_path": {
                         "type": "string",
@@ -888,7 +1058,37 @@ async def list_tools() -> list[Tool]:
 async def call_tool(name: str, arguments: Any) -> list[TextContent]:
     """Handle tool calls"""
 
-    if name == "create_presentation":
+    if name == "create_from_template":
+        template_path = arguments["template_path"]
+        filename = arguments["filename"]
+
+        if not os.path.exists(template_path):
+            return [
+                TextContent(
+                    type="text",
+                    text=f"Error: Template file '{template_path}' not found.",
+                )
+            ]
+
+        try:
+            prs = Presentation(template_path)
+            presentations[filename] = prs
+            template_presentations.add(filename)
+            return [
+                TextContent(
+                    type="text",
+                    text=(
+                        f"Loaded template '{template_path}' as '{filename}' "
+                        f"({len(prs.slides)} existing slides, "
+                        f"{len(prs.slide_layouts)} layouts available). "
+                        "Design presets are disabled for this file unless force=true."
+                    ),
+                )
+            ]
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error loading template: {e}")]
+
+    elif name == "create_presentation":
         title = arguments["title"]
         subtitle = arguments.get("subtitle", "")
         filename = arguments["filename"]
@@ -1599,6 +1799,8 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
         filename = arguments["filename"]
         slide_index = arguments.get("slide_index", -1)
         color = arguments.get("color")
+        gradient_colors = arguments.get("gradient_colors")
+        gradient_angle = arguments.get("gradient_angle", 135)
         image_path = arguments.get("image_path")
 
         if filename not in presentations:
@@ -1621,11 +1823,18 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             ]
 
         slide = prs.slides[slide_index]
-        background = slide.background
+
+        if gradient_colors:
+            _set_gradient_background(slide, gradient_colors, gradient_angle)
+            return [
+                TextContent(
+                    type="text",
+                    text=f"Set gradient background for slide {slide_index} ({len(gradient_colors)} stops, {gradient_angle}°)",
+                )
+            ]
 
         if color:
-            # Set solid color background
-            fill = background.fill
+            fill = slide.background.fill
             fill.solid()
             hex_color = color.lstrip("#")
             r, g, b = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
@@ -1636,19 +1845,13 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                 )
             ]
 
-        elif image_path:
-            # Set image background
+        if image_path:
             if not os.path.exists(image_path):
                 return [
                     TextContent(
                         type="text", text=f"Error: Image file '{image_path}' not found."
                     )
                 ]
-
-            fill = background.fill
-            fill.solid()
-            # Note: python-pptx doesn't directly support background images via API
-            # This is a workaround - add image as full-size shape
             slide.shapes.add_picture(
                 image_path,
                 Inches(0),
@@ -1656,7 +1859,6 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                 width=prs.slide_width,
                 height=prs.slide_height,
             )
-            # Move to back
             return [
                 TextContent(
                     type="text", text=f"Set background image for slide {slide_index}"
@@ -1665,7 +1867,8 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
 
         return [
             TextContent(
-                type="text", text="Error: Provide either 'color' or 'image_path'"
+                type="text",
+                text="Error: Provide 'color', 'gradient_colors', or 'image_path'",
             )
         ]
 
@@ -2544,6 +2747,52 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                 lines.append(f'\nnotes: "{notes[:200]}"')
 
         return [TextContent(type="text", text="\n".join(lines))]
+
+    elif name == "apply_design_preset":
+        filename = arguments["filename"]
+        preset_name = arguments["preset"]
+        force = arguments.get("force", False)
+
+        if filename not in presentations:
+            return [
+                TextContent(
+                    type="text", text=f"Error: Presentation '{filename}' not found."
+                )
+            ]
+
+        if filename in template_presentations and not force:
+            return [
+                TextContent(
+                    type="text",
+                    text=(
+                        f"'{filename}' was loaded from a template — skipping preset to preserve its design. "
+                        "Pass force=true to override."
+                    ),
+                )
+            ]
+
+        preset = DESIGN_PRESETS.get(preset_name)
+        if not preset:
+            return [
+                TextContent(
+                    type="text",
+                    text=f"Unknown preset '{preset_name}'. Available: {', '.join(DESIGN_PRESETS)}",
+                )
+            ]
+
+        prs = presentations[filename]
+        for slide in prs.slides:
+            _set_gradient_background(slide, preset["bg_colors"], preset["bg_angle"])
+            _add_design_accents(
+                slide, preset["accent"], preset["secondary"], preset["accent_style"]
+            )
+
+        return [
+            TextContent(
+                type="text",
+                text=f"Applied '{preset_name}' preset to all {len(prs.slides)} slides.",
+            )
+        ]
 
     else:
         return [TextContent(type="text", text=f"Unknown tool: {name}")]
